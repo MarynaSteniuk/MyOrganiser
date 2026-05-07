@@ -1,27 +1,60 @@
 package ua.steniuk.myorganiser.data.about
-
-fun parseBrowserName(userAgent: String): String = when {
-    userAgent.contains("Firefox") -> "Firefox"
-    userAgent.contains("Chrome") -> "Chrome"
-    userAgent.contains("Safari") -> "Safari"
-    else -> "Unknown Browser"
+fun parseBrowserName(ua: String): String = when {
+    ua.contains("Firefox", ignoreCase = true)  -> "Firefox"
+    ua.contains("Edg/", ignoreCase = true)     -> "Edge"
+    ua.contains("OPR/", ignoreCase = true) ||
+            ua.contains("Opera", ignoreCase = true)    -> "Opera"
+    ua.contains("Chrome", ignoreCase = true)   -> "Chrome"
+    ua.contains("Safari", ignoreCase = true)   -> "Safari"
+    else -> "Unknown"
 }
 
-fun parseBrowserVersion(userAgent: String): String {
-    return userAgent.split(" ").lastOrNull() ?: "Unknown"
+fun parseBrowserVersion(ua: String): String {
+    val patterns = mapOf(
+        "Firefox" to Regex("Firefox/([\\d.]+)"),
+        "Edg" to Regex("Edg/([\\d.]+)"),
+        "OPR" to Regex("OPR/([\\d.]+)"),
+        "Chrome" to Regex("Chrome/([\\d.]+)"),
+        "Safari" to Regex("Version/([\\d.]+)")
+    )
+    for ((_, regex) in patterns) {
+        val match = regex.find(ua)
+        if (match != null) return match.groupValues[1]
+    }
+    return "Unknown"
 }
 
-fun parseOsName(userAgent: String): String = when {
-    userAgent.contains("Windows") -> "Windows"
-    userAgent.contains("Mac") -> "macOS"
-    userAgent.contains("Linux") -> "Linux"
-    else -> "Web"
+fun parseOsVersion(ua: String): String {
+    val patterns = listOf(
+        Regex("Windows NT ([\\d.]+)"),          // Windows
+        Regex("Android ([\\d.]+)"),             // Android
+        Regex("OS ([\\d_]+) like Mac OS X"),    // iOS  (e.g. OS 17_0)
+        Regex("Mac OS X ([\\d_.]+)"),           // macOS
+        Regex("CrOS [\\w]+ ([\\d.]+)")          // ChromeOS
+    )
+    return patterns.firstNotNullOfOrNull { regex ->
+        regex.find(ua)?.groupValues?.get(1)
+            ?.replace('_', '.')                 // iOS uses underscores
+    } ?: "Unknown"
 }
 
-fun parseOsVersion(userAgent: String): String = "Online"
+fun parseOsName(ua: String): String = when {
+    ua.contains("Windows", ignoreCase = true) -> "Windows"
+    ua.contains("Android", ignoreCase = true) -> "Android"
+    ua.contains("iPhone", ignoreCase = true) ||
+            ua.contains("iPad", ignoreCase = true) -> "iOS"
+    ua.contains("Mac OS X", ignoreCase = true) -> "macOS"
+    ua.contains("Linux", ignoreCase = true) -> "Linux"
+    ua.contains("CrOS", ignoreCase = true) -> "ChromeOS"
+    else -> "Unknown"
+}
 
-fun parseLayoutEngine(userAgent: String): String = when {
-    userAgent.contains("Gecko") -> "Gecko"
-    userAgent.contains("WebKit") -> "WebKit"
-    else -> "Blink"
+
+fun parseLayoutEngine(ua: String): String = when {
+    ua.contains("Gecko/", ignoreCase = true) &&
+            !ua.contains("like Gecko", ignoreCase = true) -> "Gecko"
+    ua.contains("AppleWebKit", ignoreCase = true) -> "WebKit / Blink"
+    ua.contains("Presto", ignoreCase = true) -> "Presto"
+    ua.contains("Trident", ignoreCase = true) -> "Trident"
+    else -> "Unknown"
 }
